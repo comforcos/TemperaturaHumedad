@@ -217,6 +217,12 @@
     }
 
     ciudadInput.addEventListener('change', () => actualizarCiudad(ciudadInput.value));
+    ciudadInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        actualizarCiudad(ciudadInput.value);
+      }
+    });
 
     const ciudadGuardada = localStorage.getItem('ciudad') || 'Ciudad Real';
     actualizarCiudad(ciudadGuardada);
