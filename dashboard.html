@@ -8,8 +8,8 @@
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
-        .then(() => console.log('âœ… Service Worker registrado'))
-        .catch(err => console.error('âŒ Error al registrar SW:', err));
+        .then(() => console.log('? Service Worker registrado'))
+        .catch(err => console.error('? Error al registrar SW:', err));
     }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -24,6 +24,17 @@
       color: white;
       padding: 1rem;
       text-align: center;
+    }
+    .alerta {
+      background-color: #ff4444;
+      color: white;
+      text-align: center;
+      padding: 10px;
+      font-weight: bold;
+      display: none;
+    }
+    .alerta.azul {
+      background-color: #0077cc;
     }
     .grid {
       display: grid;
@@ -104,52 +115,61 @@
 </head>
 <body>
   <header>
-    <h1>ğŸŒ Dashboard Ambiental</h1>
+    <h1>?? Dashboard Ambiental</h1>
   </header>
+
+  <div id="alertaESP" class="alerta azul"></div>
+  <div id="alertaTemp" class="alerta"></div>
+  <div id="alertaHum" class="alerta"></div>
 
   <div class="grid">
     <section>
-      <h2>ğŸ“ UbicaciÃ³n</h2>
+      <h2>?? Ubicaci¨®n</h2>
       <label for="ciudad">Introduce tu ciudad:</label>
       <input type="text" id="ciudad" placeholder="Ej: Salamanca" autocomplete="off" />
-      <button id="btnGeo">Usar mi ubicaciÃ³n</button>
+      <button id="btnGeo">Usar mi ubicaci¨®n</button>
       <div class="suggestions" id="sugerencias"></div>
     </section>
 
     <section>
-      <h2>ğŸ“Š Datos Actuales</h2>
+      <h2>?? Datos Actuales</h2>
       <div class="cards">
-        <div class="card" id="cardTemp">ğŸŒ¡ï¸ Temperatura: -- Â°C</div>
-        <div class="card" id="cardHum">ğŸ’§ Humedad: -- %</div>
-        <div class="card" id="cardAnalisis">ğŸ§  AnÃ¡lisis: ---</div>
+        <div class="card" id="cardTemp">??? Temperatura: -- ¡ãC</div>
+        <div class="card" id="cardHum">?? Humedad: -- %</div>
+        <div class="card" id="cardAnalisis">?? An¨¢lisis: ---</div>
       </div>
     </section>
 
     <section class="wide-chart">
-      <h2>ğŸ“ˆ Temperatura y Humedad</h2>
+      <h2>?? Temperatura y Humedad</h2>
       <canvas id="tsChart"></canvas>
     </section>
 
     <section>
-      <h2>ğŸ’§ Embalses en EspaÃ±a</h2>
+      <h2>?? Embalses en Espa?a</h2>
       <a href="https://www.embalses.net" target="_blank">
-        <img src="https://www.embalses.net/webmasters/gen-general.php" alt="Embalses EspaÃ±a" />
+        <img src="https://www.embalses.net/webmasters/gen-general.php" alt="Embalses Espa?a" />
       </a>
     </section>
 
     <section>
-      <h2>ğŸŒ¦ï¸ PredicciÃ³n del tiempo</h2>
+      <h2>??? Predicci¨®n del tiempo</h2>
       <a class="weatherwidget-io" href="#" data-label_1="" data-label_2="EL TIEMPO" data-theme="original">TIEMPO</a>
     </section>
 
     <section>
-      <h2>ğŸŒ¬ï¸ Mapa interactivo Windy</h2>
+      <h2>??? Mapa interactivo Windy</h2>
       <iframe id="windy" height="450" src="" allowfullscreen></iframe>
     </section>
 
     <section class="radar">
-      <h2>ğŸŒ§ï¸ Radar de lluvias (Windy)</h2>
+      <h2>??? Radar de lluvias (Windy)</h2>
       <iframe id="windyRadar" height="450" src="" allowfullscreen></iframe>
+    </section>
+
+    <section>
+      <h2>? Estado Energ¨¦tico Nacional</h2>
+      <iframe src="https://www.ree.es/es/demanda-y-produccion-en-tiempo-real" height="500" loading="lazy"></iframe>
     </section>
   </div>
 
@@ -170,20 +190,47 @@
     const url = `https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readAPIKey}&results=${results}`;
     let chart;
 
+    function mostrarAlerta(id, mensaje, clase = '') {
+      const el = document.getElementById(id);
+      el.textContent = mensaje;
+      el.className = 'alerta ' + clase;
+      el.style.display = 'block';
+    }
+
+    function ocultarAlerta(id) {
+      const el = document.getElementById(id);
+      el.style.display = 'none';
+    }
+
+    function actualizarTarjetas(temp, hum, fecha) {
+      document.getElementById('cardTemp').textContent = `??? Temperatura: ${temp} ¡ãC`;
+      document.getElementById('cardHum').textContent = `?? Humedad: ${hum} %`;
+      let analisis = "??? Temperatura agradable";
+      if (temp >= 36) {
+        analisis = "?? Calor extremo";
+        mostrarAlerta('alertaTemp', '?? Temperatura cr¨ªtica: ' + temp + ' ¡ãC');
+      } else ocultarAlerta('alertaTemp');
+
+      if (hum < 30) {
+        mostrarAlerta('alertaHum', '?? Humedad muy baja: ' + hum + ' %');
+      } else ocultarAlerta('alertaHum');
+
+      document.getElementById('cardAnalisis').textContent = `?? An¨¢lisis: ${analisis}`;
+
+      const horaLectura = new Date(fecha);
+      const ahora = new Date();
+      const diferenciaHoras = (ahora - horaLectura) / (1000 * 60 * 60);
+
+      if (diferenciaHoras > 4) {
+        mostrarAlerta('alertaESP', '?? El ESP32 lleva m¨¢s de 4h sin enviar datos. Posible fallo de conexi¨®n.', 'azul');
+      } else ocultarAlerta('alertaESP');
+    }
+
     function formatDateTime(dateStr) {
       const d = new Date(dateStr);
       return d.toLocaleString('es-ES', {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
       });
-    }
-
-    function actualizarTarjetas(temp, hum) {
-      document.getElementById('cardTemp').textContent = `ğŸŒ¡ï¸ Temperatura: ${temp} Â°C`;
-      document.getElementById('cardHum').textContent = `ğŸ’§ Humedad: ${hum} %`;
-      let analisis = "ğŸŒ¤ï¸ Temperatura agradable";
-      if (temp > 30) analisis = "ğŸ”¥ Mucho calor, posible riesgo";
-      else if (temp < 10) analisis = "â„ï¸ Temperatura baja, riesgo de heladas";
-      document.getElementById('cardAnalisis').textContent = `ğŸ§  AnÃ¡lisis: ${analisis}`;
     }
 
     function loadData() {
@@ -194,7 +241,12 @@
           const labels = feeds.map(f => formatDateTime(f.created_at));
           const tempData = feeds.map(f => parseFloat(f.field1) || null);
           const humData = feeds.map(f => parseFloat(f.field3) || null);
-          actualizarTarjetas(tempData[tempData.length - 1], humData[humData.length - 1]);
+
+          actualizarTarjetas(
+            tempData[tempData.length - 1],
+            humData[humData.length - 1],
+            feeds[feeds.length - 1].created_at
+          );
 
           if (!chart) {
             const ctx = document.getElementById('tsChart').getContext('2d');
@@ -204,7 +256,7 @@
                 labels: labels,
                 datasets: [
                   {
-                    label: 'Temperatura (Â°C)',
+                    label: 'Temperatura (¡ãC)',
                     data: tempData,
                     borderColor: 'rgba(255,99,132,1)',
                     backgroundColor: 'rgba(255,99,132,0.2)',
@@ -286,12 +338,12 @@
           fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
             .then(res => res.json())
             .then(data => {
-              const ciudad = data.address.city || data.address.town || data.address.village || 'UbicaciÃ³n';
+              const ciudad = data.address.city || data.address.town || data.address.village || 'Ubicaci¨®n';
               actualizarCiudad(ciudad, lat, lon);
             });
-        }, () => alert("No se pudo acceder a la ubicaciÃ³n."));
+        }, () => alert("No se pudo acceder a la ubicaci¨®n."));
       } else {
-        alert("GeolocalizaciÃ³n no disponible.");
+        alert("Geolocalizaci¨®n no disponible.");
       }
     });
 
