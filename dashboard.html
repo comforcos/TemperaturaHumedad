@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Ambiental Moderno</title>
   <link rel="manifest" href="manifest.json">
   <script>
@@ -16,7 +16,8 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      margin: 0; padding: 0;
+      margin: 0;
+      padding: 0;
       background: #eef1f5;
     }
     header {
@@ -124,19 +125,19 @@
 
   <div class="grid">
     <section>
-      <h2>?? Ubicaci車n</h2>
+      <h2>?? Ubicacion</h2>
       <label for="ciudad">Introduce tu ciudad:</label>
-      <input type="text" id="ciudad" placeholder="Ej: Salamanca" autocomplete="off" />
-      <button id="btnGeo">Usar mi ubicaci車n</button>
+      <input type="text" id="ciudad" placeholder="Ej: Salamanca" autocomplete="off">
+      <button id="btnGeo">Usar mi ubicacion</button>
       <div class="suggestions" id="sugerencias"></div>
     </section>
 
     <section>
       <h2>?? Datos Actuales</h2>
       <div class="cards">
-        <div class="card" id="cardTemp">??? Temperatura: -- ～C</div>
+        <div class="card" id="cardTemp">??? Temperatura: -- °C</div>
         <div class="card" id="cardHum">?? Humedad: -- %</div>
-        <div class="card" id="cardAnalisis">?? An芍lisis: ---</div>
+        <div class="card" id="cardAnalisis">?? Analisis: ---</div>
       </div>
     </section>
 
@@ -146,14 +147,14 @@
     </section>
 
     <section>
-      <h2>?? Embalses en Espa?a</h2>
+      <h2>?? Embalses en Espana</h2>
       <a href="https://www.embalses.net" target="_blank">
-        <img src="https://www.embalses.net/webmasters/gen-general.php" alt="Embalses Espa?a" />
+        <img src="https://www.embalses.net/webmasters/gen-general.php" alt="Embalses Espana">
       </a>
     </section>
 
     <section>
-      <h2>??? Predicci車n del tiempo</h2>
+      <h2>??? Prediccion del tiempo</h2>
       <a class="weatherwidget-io" href="#" data-label_1="" data-label_2="EL TIEMPO" data-theme="original">TIEMPO</a>
     </section>
 
@@ -168,187 +169,146 @@
     </section>
 
     <section>
-      <h2>? Estado Energ谷tico Nacional</h2>
-      <iframe src="https://www.ree.es/es/demanda-y-produccion-en-tiempo-real" height="500" loading="lazy"></iframe>
+      <h2>? Estado Energetico Nacional</h2>
+      <div id="estadoEnergia">(en espera de token para integrar datos REE)</div>
     </section>
   </div>
 
-  <script>
-    const ciudadInput = document.getElementById('ciudad');
-    const sugerencias = document.getElementById('sugerencias');
-    const widget = document.querySelector('.weatherwidget-io');
-    const windy = document.getElementById('windy');
-    const windyRadar = document.getElementById('windyRadar');
-    const botonGeo = document.getElementById('btnGeo');
+<script>
+const ciudadInput = document.getElementById('ciudad');
+const sugerencias = document.getElementById('sugerencias');
+const widget = document.querySelector('.weatherwidget-io');
+const windy = document.getElementById('windy');
+const windyRadar = document.getElementById('windyRadar');
+const botonGeo = document.getElementById('btnGeo');
 
-    const ciudadGuardada = localStorage.getItem('ciudad') || '';
-    if (ciudadGuardada) ciudadInput.value = ciudadGuardada;
+const ciudadGuardada = localStorage.getItem('ciudad');
+if (ciudadGuardada) ciudadInput.value = ciudadGuardada;
 
-    const channelID = '2885960';
-    const readAPIKey = '0PSL9A0O3XDWY7B7';
-    const results = 48;
-    const url = `https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readAPIKey}&results=${results}`;
-    let chart;
+const channelID = '2885960';
+const readAPIKey = '0PSL9A0O3XDWY7B7';
+const results = 48;
+const url = `https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readAPIKey}&results=${results}`;
+let chart;
 
-    function mostrarAlerta(id, mensaje, clase = '') {
-      const el = document.getElementById(id);
-      el.textContent = mensaje;
-      el.className = 'alerta ' + clase;
-      el.style.display = 'block';
-    }
+function mostrarAlerta(id, mensaje, clase = '') {
+  const el = document.getElementById(id);
+  el.textContent = mensaje;
+  el.className = 'alerta ' + clase;
+  el.style.display = 'block';
+}
 
-    function ocultarAlerta(id) {
-      const el = document.getElementById(id);
-      el.style.display = 'none';
-    }
+function ocultarAlerta(id) {
+  document.getElementById(id).style.display = 'none';
+}
 
-    function actualizarTarjetas(temp, hum, fecha) {
-      document.getElementById('cardTemp').textContent = `??? Temperatura: ${temp} ～C`;
-      document.getElementById('cardHum').textContent = `?? Humedad: ${hum} %`;
-      let analisis = "??? Temperatura agradable";
-      if (temp >= 36) {
-        analisis = "?? Calor extremo";
-        mostrarAlerta('alertaTemp', '?? Temperatura cr赤tica: ' + temp + ' ～C');
-      } else ocultarAlerta('alertaTemp');
+function actualizarTarjetas(temp, hum, fecha) {
+  document.getElementById('cardTemp').textContent = `??? Temperatura: ${temp} °C`;
+  document.getElementById('cardHum').textContent = `?? Humedad: ${hum} %`;
+  let analisis = "??? Temperatura agradable";
+  if (temp >= 36) mostrarAlerta('alertaTemp', `?? Temperatura critica: ${temp} °C`);
+  else ocultarAlerta('alertaTemp');
+  if (hum < 30) mostrarAlerta('alertaHum', `?? Humedad muy baja: ${hum} %`);
+  else ocultarAlerta('alertaHum');
+  document.getElementById('cardAnalisis').textContent = `?? Analisis: ${analisis}`;
+  const horaLectura = new Date(fecha);
+  const ahora = new Date();
+  const diferenciaHoras = (ahora - horaLectura) / (1000 * 60 * 60);
+  if (diferenciaHoras > 4) mostrarAlerta('alertaESP', '?? El ESP32 lleva mas de 4h sin enviar datos.', 'azul');
+  else ocultarAlerta('alertaESP');
+}
 
-      if (hum < 30) {
-        mostrarAlerta('alertaHum', '?? Humedad muy baja: ' + hum + ' %');
-      } else ocultarAlerta('alertaHum');
+function formatDateTime(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleString('es-ES', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+}
 
-      document.getElementById('cardAnalisis').textContent = `?? An芍lisis: ${analisis}`;
-
-      const horaLectura = new Date(fecha);
-      const ahora = new Date();
-      const diferenciaHoras = (ahora - horaLectura) / (1000 * 60 * 60);
-
-      if (diferenciaHoras > 4) {
-        mostrarAlerta('alertaESP', '?? El ESP32 lleva m芍s de 4h sin enviar datos. Posible fallo de conexi車n.', 'azul');
-      } else ocultarAlerta('alertaESP');
-    }
-
-    function formatDateTime(dateStr) {
-      const d = new Date(dateStr);
-      return d.toLocaleString('es-ES', {
-        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-      });
-    }
-
-    function loadData() {
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          const feeds = data.feeds;
-          const labels = feeds.map(f => formatDateTime(f.created_at));
-          const tempData = feeds.map(f => parseFloat(f.field1) || null);
-          const humData = feeds.map(f => parseFloat(f.field3) || null);
-
-          actualizarTarjetas(
-            tempData[tempData.length - 1],
-            humData[humData.length - 1],
-            feeds[feeds.length - 1].created_at
-          );
-
-          if (!chart) {
-            const ctx = document.getElementById('tsChart').getContext('2d');
-            chart = new Chart(ctx, {
-              type: 'line',
-              data: {
-                labels: labels,
-                datasets: [
-                  {
-                    label: 'Temperatura (～C)',
-                    data: tempData,
-                    borderColor: 'rgba(255,99,132,1)',
-                    backgroundColor: 'rgba(255,99,132,0.2)',
-                    fill: false,
-                    tension: 0.1,
-                    pointRadius: 3
-                  },
-                  {
-                    label: 'Humedad (%)',
-                    data: humData,
-                    borderColor: 'rgba(54,162,235,1)',
-                    backgroundColor: 'rgba(54,162,235,0.2)',
-                    fill: false,
-                    tension: 0.1,
-                    pointRadius: 3
-                  }
-                ]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                  x: { display: true, title: { display: true, text: 'Fecha y Hora' } },
-                  y: { display: true, title: { display: true, text: 'Valor' } }
-                },
-                plugins: {
-                  legend: { position: 'top' },
-                  tooltip: { mode: 'index', intersect: false }
-                },
-                interaction: { mode: 'nearest', axis: 'x', intersect: false }
-              }
-            });
-          } else {
-            chart.data.labels = labels;
-            chart.data.datasets[0].data = tempData;
-            chart.data.datasets[1].data = humData;
-            chart.update();
-          }
+function loadData() {
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      const feeds = data.feeds;
+      if (!feeds || feeds.length === 0) return;
+      const labels = feeds.map(f => formatDateTime(f.created_at));
+      const tempData = feeds.map(f => parseFloat(f.field1) || null);
+      const humData = feeds.map(f => parseFloat(f.field3) || null);
+      actualizarTarjetas(tempData.at(-1), humData.at(-1), feeds.at(-1).created_at);
+      const ctx = document.getElementById('tsChart').getContext('2d');
+      if (!chart) {
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              { label: 'Temperatura (°C)', data: tempData, borderColor: 'red', backgroundColor: 'rgba(255,99,132,0.2)', fill: false },
+              { label: 'Humedad (%)', data: humData, borderColor: 'blue', backgroundColor: 'rgba(54,162,235,0.2)', fill: false }
+            ]
+          },
+          options: { responsive: true, maintainAspectRatio: false }
         });
-    }
-
-    function actualizarCiudad(ciudad, lat, lon) {
-      ciudadInput.value = ciudad;
-      localStorage.setItem('ciudad', ciudad);
-      const ciudadParam = ciudad.trim().toLowerCase().replace(/\s+/g, '-');
-      widget.href = `https://www.tiempo.com/${ciudadParam}.htm`;
-      widget.dataset.label_1 = ciudad.toUpperCase();
-      windy.src = `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lon}&zoom=8&overlay=wind&level=surface`;
-      windyRadar.src = `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lon}&zoom=9&overlay=rain&level=surface`;
-    }
-
-    ciudadInput.addEventListener('input', () => {
-      const query = ciudadInput.value.trim();
-      if (query.length < 2) {
-        sugerencias.innerHTML = '';
-        return;
-      }
-      fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=es&q=${encodeURIComponent(query)}`)
-        .then(res => res.json())
-        .then(data => {
-          sugerencias.innerHTML = '';
-          data.forEach(item => {
-            const div = document.createElement('div');
-            div.textContent = item.display_name;
-            div.onclick = () => {
-              sugerencias.innerHTML = '';
-              actualizarCiudad(item.display_name, item.lat, item.lon);
-            };
-            sugerencias.appendChild(div);
-          });
-        });
-    });
-
-    botonGeo.addEventListener('click', () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
-            .then(res => res.json())
-            .then(data => {
-              const ciudad = data.address.city || data.address.town || data.address.village || 'Ubicaci車n';
-              actualizarCiudad(ciudad, lat, lon);
-            });
-        }, () => alert("No se pudo acceder a la ubicaci車n."));
       } else {
-        alert("Geolocalizaci車n no disponible.");
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = tempData;
+        chart.data.datasets[1].data = humData;
+        chart.update();
       }
-    });
+    })
+    .catch(err => console.error('Error al cargar datos:', err));
+}
 
-    loadData();
-    setInterval(loadData, 60000);
-  </script>
+function actualizarCiudad(ciudad, lat, lon) {
+  localStorage.setItem('ciudad', ciudad);
+  widget.href = `https://www.tiempo.com/${ciudad.toLowerCase().replace(/\s+/g, '-')}.htm`;
+  widget.dataset.label_1 = ciudad.toUpperCase();
+  windy.src = `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lon}&zoom=8&overlay=wind&level=surface`;
+  windyRadar.src = `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lon}&zoom=9&overlay=rain&level=surface`;
+}
+
+ciudadInput.addEventListener('input', () => {
+  const query = ciudadInput.value.trim();
+  if (query.length < 2) return sugerencias.innerHTML = '';
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=es&q=${encodeURIComponent(query)}`)
+    .then(res => res.json())
+    .then(data => {
+      sugerencias.innerHTML = '';
+      data.forEach(item => {
+        const div = document.createElement('div');
+        div.textContent = item.display_name;
+        div.onclick = () => {
+          sugerencias.innerHTML = '';
+          actualizarCiudad(item.display_name, item.lat, item.lon);
+        };
+        sugerencias.appendChild(div);
+      });
+    });
+});
+
+botonGeo.addEventListener('click', () => {
+  if (!navigator.geolocation) return alert("Geolocalizacion no disponible.");
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+      .then(res => res.json())
+      .then(data => {
+        const ciudad = data.address.city || data.address.town || data.address.village || 'Ubicacion';
+        actualizarCiudad(ciudad, lat, lon);
+      });
+  }, () => alert("No se pudo acceder a la ubicacion."));
+});
+
+if (ciudadGuardada) {
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=es&q=${encodeURIComponent(ciudadGuardada)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.length > 0) actualizarCiudad(data[0].display_name, data[0].lat, data[0].lon);
+    });
+}
+
+loadData();
+setInterval(loadData, 60000);
+</script>
 </body>
 </html>
