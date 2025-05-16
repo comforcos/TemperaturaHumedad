@@ -4,6 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Ambiental Moderno</title>
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log('✅ Service Worker registrado'))
+        .catch(err => console.error('❌ Error al registrar SW:', err));
+    }
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -92,6 +100,7 @@
       <h2>📍 Ubicación</h2>
       <label for="ciudad">Introduce tu ciudad:</label>
       <input type="text" id="ciudad" placeholder="Ej: Salamanca" autocomplete="off" />
+      <button id="btnGeo">Usar mi ubicación</button>
       <div class="suggestions" id="sugerencias"></div>
     </section>
 
@@ -135,7 +144,10 @@
       const widget = document.querySelector('.weatherwidget-io');
       const windy = document.getElementById('windy');
       const windyRadar = document.getElementById('windyRadar');
-      const ciudadGuardada = localStorage.getItem('ciudad') || 'León';
+      const botonGeo = document.getElementById('btnGeo');
+
+      const ciudadGuardada = localStorage.getItem('ciudad') || '';
+      if (ciudadGuardada) ciudadInput.value = ciudadGuardada;
 
       const channelID = '2885960';
       const readAPIKey = '0PSL9A0O3XDWY7B7';
@@ -252,9 +264,25 @@
           });
       });
 
+      botonGeo.addEventListener('click', () => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(pos => {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+              .then(res => res.json())
+              .then(data => {
+                const ciudad = data.address.city || data.address.town || data.address.village || 'Ubicación';
+                actualizarCiudad(ciudad, lat, lon);
+              });
+          }, () => alert("No se pudo acceder a la ubicación."));
+        } else {
+          alert("Geolocalización no disponible.");
+        }
+      });
+
       loadData();
       setInterval(loadData, 60000);
-      ciudadInput.value = ciudadGuardada;
     });
   </script>
 </body>
