@@ -153,14 +153,17 @@
         <div class="valor" id="co2">-- %</div>
       </div>
       <div class="indicador">
-        <h3>Balance Exportación</h3>
+        <h3>Balance Internacional</h3>
         <div class="valor" id="interconexiones">-- MWh</div>
       </div>
     </section>
 
+    <!-- Gráfico Temperatura/Humedad Responsive -->
     <section class="wide-chart">
       <h2>📈 Temperatura y Humedad</h2>
-      <canvas id="tsChart"></canvas>
+      <div class="chart-container">
+        <canvas id="tsChart"></canvas>
+      </div>
     </section>
 
     <!-- Sección Ambiental -->
@@ -187,6 +190,10 @@
         <div class="card" id="tiempoReal">🕒 Actualizando datos...</div>
       </div>
     </section>
+    <section class="wide-chart">
+      <h2>🌧️ Radar de Lluvias (Windy)</h2>
+      <iframe id="windyRadar" height="450" src="" allowfullscreen></iframe>
+    </section>	
 
     <section>
       <h2>🌦️ Predicción del tiempo</h2>
@@ -240,9 +247,17 @@ async function actualizarDashboard() {
       fetch(tsUrl).then(res => res.json())
     ]);
 
-    actualizarIndicadores(datosREE);
-    actualizarGraficosEnergia(datosREE);
+    // Actualizar todos los indicadores
+    document.getElementById('demanda').textContent = `${datosREE.demanda} MW`;
+    document.getElementById('co2').textContent = `${datosREE.co2Free}%`;
+    document.getElementById('interconexiones').textContent = `${datosREE.balance || 0} MWh`;
+
+    // Actualizar gráficos con datos reales
+    actualizarGraficoGeneracion(datosREE);
+    actualizarGraficoMercados(datosREE);
+    actualizarMixEnergetico(datosREE);
     
+    // Actualizar datos ambientales
     if (tsData.feeds?.length > 0) {
       actualizarDatosAmbientales(tsData.feeds);
     }
@@ -250,7 +265,6 @@ async function actualizarDashboard() {
     console.error('Error:', error);
   }
 }
-
 function actualizarIndicadores(datos) {
   document.getElementById('demanda').textContent = `${datos.demanda} MW`;
   document.getElementById('co2').textContent = `${datos.co2Free}%`;
@@ -278,25 +292,71 @@ function actualizarGraficoGeneracion(datos) {
   const ctx = document.getElementById('graficoGeneracion').getContext('2d');
   if (chartGeneracion) chartGeneracion.destroy();
 
+  // Datos reales de ejemplo (debes adaptar a tu API)
+  const datosReales = {
+    generacion: [datos.eolica, datos.solar_fv, datos.hidraulica, datos.nuclear, datos.ciclo_combinado],
+    consumo: [datos.demanda * 0.8, datos.demanda * 0.9, datos.demanda, datos.demanda * 1.1, datos.demanda * 0.95],
+    horas: ['00h', '04h', '08h', '12h', '16h']
+  };
+
   chartGeneracion = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: ['00h', '04h', '08h', '12h', '16h', '20h'],
+      labels: datosReales.horas,
       datasets: [{
         label: 'Generación (MW)',
-        data: [datos.eolica, datos.solar_fv, datos.hidraulica, datos.nuclear, datos.ciclo_combinado, datos.renovables],
+        data: datosReales.generacion,
         borderColor: '#4CAF50',
-        tension: 0.4
+        tension: 0.4,
+        borderWidth: 2
       }, {
         label: 'Consumo (MW)',
-        data: [datos.demanda * 0.8, datos.demanda * 0.9, datos.demanda, datos.demanda * 1.1, datos.demanda * 0.95, datos.demanda * 0.85],
+        data: datosReales.consumo,
         borderColor: '#0077cc',
-        tension: 0.4
+        tension: 0.4,
+        borderWidth: 2
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top' }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
   });
 }
+// Añadimos media queries para móvil
+<style>
+  @media (max-width: 768px) {
+    .grid {
+      grid-template-columns: 1fr;
+      padding: 10px;
+    }
+    
+    .wide-chart {
+      min-width: 100%;
+      height: 300px;
+    }
+    
+    #tsChart {
+      width: 100%!important;
+      height: 250px!important;
+    }
+    
+    .energy-source {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .energy-bar {
+      width: 100%;
+    }
+  }
+</style>
 
 function actualizarGraficoMercados(datos) {
   const ctx = document.getElementById('graficoMercados').getContext('2d');
@@ -389,16 +449,40 @@ function actualizarTarjetas(temp, hum, fecha) {
 
 function actualizarGraficaTS(feeds) {
   const ctx = document.getElementById('tsChart').getContext('2d');
-  
-  // Destruir gráfico anterior si existe
   if (chart) chart.destroy();
+
+  const labels = feeds.map(feed => {
+    const date = new Date(feed.created_at);
+    return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+  });
+
+  const temperatura = feeds.map(feed => parseFloat(feed.field1) || 0);
+  const humedad = feeds.map(feed => parseFloat(feed.field3) || 0);
 
   chart = new Chart(ctx, {
     type: 'line',
-    data: {/* ... datos ... */},
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Temperatura (°C)',
+          data: temperatura,
+          borderColor: '#f44336',
+          backgroundColor: 'rgba(244,67,54,0.2)',
+          tension: 0.3
+        },
+        {
+          label: 'Humedad (%)',
+          data: humedad,
+          borderColor: '#2196F3',
+          backgroundColor: 'rgba(33,150,243,0.2)',
+          tension: 0.3
+        }
+      ]
+    },
     options: {
       responsive: true,
-      maintainAspectRatio: false, // ¡Importante!
+      maintainAspectRatio: false,
       plugins: {
         legend: { position: 'top' }
       },
@@ -406,7 +490,7 @@ function actualizarGraficaTS(feeds) {
         x: {
           ticks: {
             autoSkip: true,
-            maxTicksLimit: 20 // Máximo de puntos visibles
+            maxTicksLimit: 30
           }
         },
         y: {
@@ -416,6 +500,7 @@ function actualizarGraficaTS(feeds) {
     }
   });
 }
+
 
 function formatDateTime(dateStr) {
   const d = new Date(dateStr);
