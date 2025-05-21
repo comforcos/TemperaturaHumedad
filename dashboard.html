@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Ambiental y Energético Integral</title>
+  <title>Dashboard Ambiental Estable</title>
   <link rel="manifest" href="manifest.json">
   <script>
     if ('serviceWorker' in navigator) {
@@ -21,11 +21,10 @@
       background: #eef1f5;
     }
     header {
-      background: linear-gradient(135deg, #0077cc, #005f99);
+      background: #0077cc;
       color: white;
-      padding: 1.5rem;
+      padding: 1rem;
       text-align: center;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     .alerta {
       background-color: #ff4444;
@@ -49,12 +48,9 @@
     section {
       background: white;
       border-radius: 10px;
-      padding: 1.5rem;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.05);
-      transition: transform 0.2s;
-    }
-    section:hover {
-      transform: translateY(-3px);
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      position: relative;
     }
     .cards {
       display: flex;
@@ -68,41 +64,16 @@
       border-radius: 8px;
       font-size: 1rem;
     }
-    .indicador {
-      border-left: 4px solid #0077cc;
-      padding: 1rem;
-      margin: 0.5rem 0;
-    }
-    .indicador h3 {
-      margin: 0 0 0.5rem 0;
-      color: #666;
-      font-size: 1rem;
-    }
-    .valor {
-      font-size: 1.8rem;
-      font-weight: 600;
-      color: #2c3e50;
-    }
     canvas, iframe, img {
       width: 100%;
       border-radius: 8px;
     }
-    .wide-chart {
-      grid-column: 1 / -1;
-      min-width: 1200px;
-      overflow-x: auto;
-    }
-    #tsChart {
-      width: 2000px !important;
-      height: 400px !important;
-    }
-    .energy-source {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px;
-      border-radius: 6px;
-      margin: 5px 0;
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 1em;
+      box-sizing: border-box;
+      margin-top: 10px;
     }
     .suggestions {
       position: absolute;
@@ -115,25 +86,71 @@
       overflow-y: auto;
       z-index: 10;
     }
-    input[type="text"], button {
+    .suggestions div {
+      padding: 8px;
+      cursor: pointer;
+    }
+    .suggestions div:hover {
+      background: #eee;
+    }
+    button {
       padding: 10px;
       margin-top: 10px;
       font-size: 1em;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    button {
       background-color: #0077cc;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
+    .radar iframe {
+      border: none;
+    }
+    .wide-chart {
+      grid-column: 1 / -1;
+    }
+    #tsChart {
+      height: 400px !important;
+      min-width: 700px;
+    }
+    .scroll-chart {
+      overflow-x: auto;
+    }
+    .energy-source {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-radius: 6px;
+      margin: 5px 0;
+    }
+    .energy-label {
+      width: 100px;
+      font-weight: 500;
+    }
+    .energy-bar {
+      height: 20px;
+      border-radius: 4px;
+      flex-grow: 1;
+      transition: width 0.5s ease;
+    }
+    .indicador {
+      background: #f1f9ff;
+      border-left: 6px solid #0077cc;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 1.2rem;
+    }
+    .valor {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>🌍 Dashboard Ambiental y Energético Integral</h1>
+    <h1>🌍 Dashboard Ambiental + Energético</h1>
   </header>
 
   <div id="alertaESP" class="alerta azul"></div>
@@ -141,31 +158,9 @@
   <div id="alertaHum" class="alerta"></div>
 
   <div class="grid">
-    <!-- Sección Energética -->
-    <section>
-      <h2>⚡ Indicadores Energéticos</h2>
-      <div class="indicador">
-        <h3>Demanda Actual</h3>
-        <div class="valor" id="demanda">-- MW</div>
-      </div>
-      <div class="indicador">
-        <h3>Generación Libre de CO₂</h3>
-        <div class="valor" id="co2">-- %</div>
-      </div>
-      <div class="indicador">
-        <h3>Balance Exportación</h3>
-        <div class="valor" id="interconexiones">-- MWh</div>
-      </div>
-    </section>
-
-    <section class="wide-chart">
-      <h2>📈 Temperatura y Humedad</h2>
-      <canvas id="tsChart"></canvas>
-    </section>
-
-    <!-- Sección Ambiental -->
     <section>
       <h2>📍 Ubicación</h2>
+      <label for="ciudad">Introduce tu ciudad:</label>
       <input type="text" id="ciudad" placeholder="Ej: Salamanca" autocomplete="off">
       <button id="btnGeo">Usar mi ubicación</button>
       <div class="suggestions" id="sugerencias"></div>
@@ -180,17 +175,52 @@
       </div>
     </section>
 
+    <section class="indicador">
+      <h2>Demanda Real</h2>
+      <div class="valor" id="demandaReal">-- MW</div>
+    </section>
+    <section class="indicador">
+      <h2>PVPC</h2>
+      <div class="valor" id="pvpc">-- €/MWh</div>
+    </section>
+    <section class="indicador">
+      <h2>Generación Libre de CO₂</h2>
+      <div class="valor" id="co2">-- %</div>
+    </section>
+    <section class="indicador">
+      <h2>Interconexiones</h2>
+      <div class="valor" id="interconexiones">-- MWh</div>
+    </section>
+    <section class="indicador">
+      <h2>Previsión Eólica</h2>
+      <div class="valor" id="eolica">-- MW</div>
+    </section>
+    <section class="indicador">
+      <h2>Previsión Solar</h2>
+      <div class="valor" id="solar">-- MW</div>
+    </section>
+
+    <section class="wide-chart scroll-chart">
+      <h2>📈 Temperatura y Humedad</h2>
+      <canvas id="tsChart"></canvas>
+    </section>
+
     <section class="wide-chart">
-      <h2>⚡ Mix Energético Nacional</h2>
+      <h2>⚡ Mix Energético Nacional (Actualizado)</h2>
       <canvas id="energiaChart"></canvas>
       <div id="detalleEnergia" class="cards" style="margin-top:20px;">
         <div class="card" id="tiempoReal">🕒 Actualizando datos...</div>
       </div>
     </section>
 
-    <section>
-      <h2>🌦️ Predicción del tiempo</h2>
-      <a class="weatherwidget-io" href="https://forecast7.com/es/40d97n5d66/salamanca/" data-label_1="SALAMANCA" data-label_2="TIEMPO HOY" data-theme="pure">SALAMANCA TIEMPO</a>
+    <section class="wide-chart">
+      <h2>📉 Generación y Consumo</h2>
+      <canvas id="graficoDemanda"></canvas>
+    </section>
+
+    <section class="wide-chart">
+      <h2>📉 Mercados y Precios</h2>
+      <canvas id="graficoPrecios"></canvas>
     </section>
 
     <section>
@@ -201,121 +231,27 @@
     </section>
 
     <section>
+      <h2>🌦️ Predicción del tiempo</h2>
+      <a class="weatherwidget-io" href="https://forecast7.com/es/40d97n5d66/salamanca/" data-label_1="SALAMANCA" data-label_2="TIEMPO HOY" data-theme="pure">SALAMANCA TIEMPO</a>
+    </section>
+
+    <section>
       <h2>🌬️ Mapa interactivo Windy</h2>
       <iframe id="windy" height="450" src="" allowfullscreen></iframe>
     </section>
 
-    <section class="wide-chart">
-      <h2>📊 Generación y Consumo</h2>
-      <canvas id="graficoGeneracion"></canvas>
-    </section>
-
-    <section class="wide-chart">
-      <h2>💹 Mercados y Precios</h2>
-      <canvas id="graficoMercados"></canvas>
+    <section class="radar">
+      <h2>🌧️ Radar de lluvias (Windy)</h2>
+      <iframe id="windyRadar" height="450" src="" allowfullscreen></iframe>
     </section>
   </div>
 
-<script>
-// Configuración común
-const PROXY_URL = 'https://temperaturahumedad.onrender.com/datos-ree';
-const tsUrl = `https://api.thingspeak.com/channels/2885960/feeds.json?api_key=0PSL9A0O3XDWY7B7&results=200`;
-let chart, energiaChart, chartGeneracion, chartMercados;
-
-// Función principal de actualización
-async function actualizarDashboard() {
-  try {
-    const [datosREE, tsData] = await Promise.all([
-      fetch(PROXY_URL).then(res => res.json()),
-      fetch(tsUrl).then(res => res.json())
-    ]);
-
-    // Actualizar indicadores energéticos
-    document.getElementById('demanda').textContent = `${datosREE.demanda} MW`;
-    document.getElementById('co2').textContent = `${datosREE.co2Free}%`;
-    document.getElementById('interconexiones').textContent = `${datosREE.balance || 0} MWh`;
-
-    // Actualizar gráficos energéticos
-    actualizarGraficoGeneracion(datosREE);
-    actualizarGraficoMercados(datosREE);
-    actualizarMixEnergético(datosREE);
-
-    // Actualizar datos ambientales
-    const feeds = tsData.feeds;
-    if (feeds && feeds.length > 0) {
-      const ultimoRegistro = feeds[feeds.length - 1];
-      actualizarTarjetas(
-        parseFloat(ultimoRegistro.field1) || 0,
-        parseFloat(ultimoRegistro.field3) || 0,
-        ultimoRegistro.created_at
-      );
-      actualizarGraficaTS(feeds);
-    }
-  } catch (error) {
-    console.error('Error al actualizar datos:', error);
-  }
-}
-
-// Funciones gráficas
-function actualizarGraficoGeneracion(datos) {
-  const ctx = document.getElementById('graficoGeneracion').getContext('2d');
-  if (chartGeneracion) chartGeneracion.destroy();
-
-  chartGeneracion = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: ['00h', '04h', '08h', '12h', '16h', '20h'],
-      datasets: [{
-        label: 'Generación (MW)',
-        data: [datos.eolica, datos.solar_fv, datos.hidraulica, datos.nuclear, datos.ciclo_combinado, datos.renovables],
-        borderColor: '#4CAF50',
-        tension: 0.4
-      }, {
-        label: 'Consumo (MW)',
-        data: [datos.demanda * 0.8, datos.demanda * 0.9, datos.demanda, datos.demanda * 1.1, datos.demanda * 0.95, datos.demanda * 0.85],
-        borderColor: '#0077cc',
-        tension: 0.4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false
-    }
-  });
-}
-
-function actualizarGraficoMercados(datos) {
-  const ctx = document.getElementById('graficoMercados').getContext('2d');
-  if (chartMercados) chartMercados.destroy();
-
-  chartMercados = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Precio Spot', 'Mercado Diario', 'Mercado Intradiario'],
-      datasets: [{
-        label: 'Precios (€/MWh)',
-        data: [datos.precio, datos.precio * 0.95, datos.precio * 1.05],
-        backgroundColor: ['#0077cc', '#4CAF50', '#FFC107']
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false
-    }
-  });
-}
-
-// Resto de funciones (actualizarTarjetas, actualizarMixEnergético, etc.) igual que en el código original ambiental
-// ... (mantener todas las funciones de geolocalización y actualización de tarjetas del código ambiental)
-
-// Inicialización
-document.addEventListener('DOMContentLoaded', () => {
-  actualizarDashboard();
-  setInterval(actualizarDashboard, 300000);
-});
-</script>
-<script>
-!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
-</script>
+  <!-- Script principal del dashboard (ya lo tenías) -->
+  <script src="dashboard.js"></script>
+  <!-- Script de indicadores ESIOS -->
+  <script src="main.js"></script>
+  <script>
+    !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
+  </script>
 </body>
 </html>
