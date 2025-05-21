@@ -1,0 +1,226 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Ambiental Estable</title>
+  <link rel="manifest" href="manifest.json" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log('✅ Service Worker registrado'))
+        .catch(err => console.error('❌ Error al registrar SW:', err));
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #eef1f5;
+    }
+    header {
+      background: #0077cc;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      padding: 20px;
+      max-width: 1400px;
+      margin: auto;
+    }
+    section {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .cards {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .card {
+      background: #f4f7fb;
+      border-left: 6px solid #0077cc;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    canvas, iframe, img {
+      width: 100%;
+      border-radius: 8px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 1em;
+      margin-top: 10px;
+    }
+    .suggestions {
+      position: absolute;
+      top: 75px;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 10;
+    }
+    .suggestions div {
+      padding: 8px;
+      cursor: pointer;
+    }
+    .suggestions div:hover {
+      background: #eee;
+    }
+    button {
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 1em;
+      background-color: #0077cc;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .wide-chart {
+      grid-column: 1 / -1;
+    }
+    .valor {
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+    .subgrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌍 Dashboard Ambiental + Datos ESIOS</h1>
+  </header>
+
+<div class="grid">
+  <section>
+    <h2>📍 Ubicación</h2>
+    <label for="ciudad">Introduce tu ciudad:</label>
+    <input type="text" id="ciudad" placeholder="Ej: Salamanca" autocomplete="off">
+    <button id="btnGeo">Usar mi ubicación</button>
+    <div class="suggestions" id="sugerencias"></div>
+  </section>
+
+  <section>
+    <h2>📊 Datos Actuales</h2>
+    <div class="cards">
+      <div class="card" id="cardTemp">🌡️ Temperatura: -- °C</div>
+      <div class="card" id="cardHum">💧 Humedad: -- %</div>
+      <div class="card" id="cardAnalisis">🧠 Análisis: ---</div>
+    </div>
+  </section>
+
+  <section class="wide-chart">
+    <h2>📈 Temperatura y Humedad</h2>
+    <canvas id="tsChart"></canvas>
+  </section>
+
+  <section>
+    <h2>💧 Embalses en España</h2>
+    <a href="https://www.embalses.net" target="_blank">
+      <img src="https://www.embalses.net/webmasters/gen-general.php" alt="Embalses España">
+    </a>
+  </section>
+
+  <section>
+    <h2>🌦️ Predicción del tiempo</h2>
+    <a class="weatherwidget-io" href="https://forecast7.com/es/40d97n5d66/salamanca/" data-label_1="SALAMANCA" data-label_2="TIEMPO HOY" data-theme="pure">SALAMANCA TIEMPO</a>
+  </section>
+
+  <section>
+    <h2>🌬️ Mapa interactivo Windy</h2>
+    <iframe id="windy" height="450" src="" allowfullscreen></iframe>
+  </section>
+
+  <section class="radar">
+    <h2>🌧️ Radar de lluvias (Windy)</h2>
+    <iframe id="windyRadar" height="450" src="" allowfullscreen></iframe>
+  </section>
+</div>
+
+<div class="grid">
+  <section class="wide-chart">
+    <h2>⚡ Indicadores Energéticos</h2>
+    <div class="subgrid">
+      <div class="card"><h4>Demanda Real</h4><div class="valor" id="demandaReal">-- MW</div></div>
+      <div class="card"><h4>PVPC</h4><div class="valor" id="pvpc">-- €/MWh</div></div>
+      <div class="card"><h4>CO₂ Libre</h4><div class="valor" id="co2">-- %</div></div>
+      <div class="card"><h4>Interconexiones</h4><div class="valor" id="interconexiones">-- MWh</div></div>
+      <div class="card"><h4>Eólica Prevista</h4><div class="valor" id="eolica">-- MW</div></div>
+      <div class="card"><h4>Solar Prevista</h4><div class="valor" id="solar">-- MW</div></div>
+    </div>
+  </section>
+
+  <section class="wide-chart">
+    <h2>📈 Demanda vs Prevista</h2>
+    <canvas id="graficoDemanda"></canvas>
+  </section>
+
+  <section class="wide-chart">
+    <h2>📉 Precio de la Electricidad</h2>
+    <canvas id="graficoPrecios"></canvas>
+  </section>
+</div>
+
+<script>
+async function cargarDatosESIOS() {
+  try {
+    const res = await fetch("https://proxy-ree.onrender.com/datos-ree");
+    const data = await res.json();
+
+    document.getElementById("demandaReal").textContent = data.demanda + " MW";
+    document.getElementById("pvpc").textContent = data.pvpc + " €/MWh";
+    document.getElementById("co2").textContent = data.co2 + " %";
+    document.getElementById("interconexiones").textContent = data.interconexiones + " MWh";
+    document.getElementById("eolica").textContent = data.eolica + " MW";
+    document.getElementById("solar").textContent = data.solar + " MW";
+
+    new Chart(document.getElementById("graficoDemanda"), {
+      type: "line",
+      data: {
+        labels: data.horas,
+        datasets: [
+          { label: "Demanda Real", data: data.demanda_real, borderColor: "orange", fill: false },
+          { label: "Prevista", data: data.demanda_prevista, borderColor: "green", fill: false },
+          { label: "Programada", data: data.demanda_programada, borderColor: "red", fill: false }
+        ]
+      }
+    });
+
+    new Chart(document.getElementById("graficoPrecios"), {
+      type: "line",
+      data: {
+        labels: data.horas_precio,
+        datasets: [
+          { label: "PVPC", data: data.precio_pvpc, borderColor: "#003366", fill: false },
+          { label: "España", data: data.precio_es, borderColor: "#ffcc00", fill: false },
+          { label: "Francia", data: data.precio_fr, borderColor: "#0099ff", fill: false }
+        ]
+      }
+    });
+  } catch (err) {
+    console.error("Error al cargar datos de ESIOS:", err);
+  }
+}
+window.addEventListener("load", cargarDatosESIOS);
+</script>
+</body>
+</html>
