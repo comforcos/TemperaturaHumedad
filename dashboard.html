@@ -190,10 +190,7 @@
         <div class="card" id="tiempoReal">🕒 Actualizando datos...</div>
       </div>
     </section>
-    <section class="wide-chart">
-      <h2>🌧️ Radar de Lluvias (Windy)</h2>
-      <iframe id="windyRadar" height="450" src="" allowfullscreen></iframe>
-    </section>	
+	
 
     <section>
       <h2>🌦️ Predicción del tiempo</h2>
@@ -247,17 +244,9 @@ async function actualizarDashboard() {
       fetch(tsUrl).then(res => res.json())
     ]);
 
-    // Actualizar todos los indicadores
-    document.getElementById('demanda').textContent = `${datosREE.demanda} MW`;
-    document.getElementById('co2').textContent = `${datosREE.co2Free}%`;
-    document.getElementById('interconexiones').textContent = `${datosREE.balance || 0} MWh`;
-
-    // Actualizar gráficos con datos reales
-    actualizarGraficoGeneracion(datosREE);
-    actualizarGraficoMercados(datosREE);
-    actualizarMixEnergetico(datosREE);
+    actualizarIndicadores(datosREE);
+    actualizarGraficosEnergia(datosREE);
     
-    // Actualizar datos ambientales
     if (tsData.feeds?.length > 0) {
       actualizarDatosAmbientales(tsData.feeds);
     }
@@ -265,6 +254,7 @@ async function actualizarDashboard() {
     console.error('Error:', error);
   }
 }
+
 function actualizarIndicadores(datos) {
   document.getElementById('demanda').textContent = `${datos.demanda} MW`;
   document.getElementById('co2').textContent = `${datos.co2Free}%`;
@@ -292,71 +282,25 @@ function actualizarGraficoGeneracion(datos) {
   const ctx = document.getElementById('graficoGeneracion').getContext('2d');
   if (chartGeneracion) chartGeneracion.destroy();
 
-  // Datos reales de ejemplo (debes adaptar a tu API)
-  const datosReales = {
-    generacion: [datos.eolica, datos.solar_fv, datos.hidraulica, datos.nuclear, datos.ciclo_combinado],
-    consumo: [datos.demanda * 0.8, datos.demanda * 0.9, datos.demanda, datos.demanda * 1.1, datos.demanda * 0.95],
-    horas: ['00h', '04h', '08h', '12h', '16h']
-  };
-
   chartGeneracion = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: datosReales.horas,
+      labels: ['00h', '04h', '08h', '12h', '16h', '20h'],
       datasets: [{
         label: 'Generación (MW)',
-        data: datosReales.generacion,
+        data: [datos.eolica, datos.solar_fv, datos.hidraulica, datos.nuclear, datos.ciclo_combinado, datos.renovables],
         borderColor: '#4CAF50',
-        tension: 0.4,
-        borderWidth: 2
+        tension: 0.4
       }, {
         label: 'Consumo (MW)',
-        data: datosReales.consumo,
+        data: [datos.demanda * 0.8, datos.demanda * 0.9, datos.demanda, datos.demanda * 1.1, datos.demanda * 0.95, datos.demanda * 0.85],
         borderColor: '#0077cc',
-        tension: 0.4,
-        borderWidth: 2
+        tension: 0.4
       }]
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'top' }
-      },
-      scales: {
-        y: { beginAtZero: true }
-      }
-    }
+    options: { responsive: true, maintainAspectRatio: false }
   });
 }
-// Añadimos media queries para móvil
-<style>
-  @media (max-width: 768px) {
-    .grid {
-      grid-template-columns: 1fr;
-      padding: 10px;
-    }
-    
-    .wide-chart {
-      min-width: 100%;
-      height: 300px;
-    }
-    
-    #tsChart {
-      width: 100%!important;
-      height: 250px!important;
-    }
-    
-    .energy-source {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    
-    .energy-bar {
-      width: 100%;
-    }
-  }
-</style>
 
 function actualizarGraficoMercados(datos) {
   const ctx = document.getElementById('graficoMercados').getContext('2d');
