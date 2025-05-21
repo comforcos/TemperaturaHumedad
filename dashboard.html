@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Ambiental Estable</title>
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json" />
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
@@ -26,17 +27,6 @@
       padding: 1rem;
       text-align: center;
     }
-    .alerta {
-      background-color: #ff4444;
-      color: white;
-      text-align: center;
-      padding: 10px;
-      font-weight: bold;
-      display: none;
-    }
-    .alerta.azul {
-      background-color: #0077cc;
-    }
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -50,7 +40,6 @@
       border-radius: 10px;
       padding: 15px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      position: relative;
     }
     .cards {
       display: flex;
@@ -72,7 +61,6 @@
       width: 100%;
       padding: 10px;
       font-size: 1em;
-      box-sizing: border-box;
       margin-top: 10px;
     }
     .suggestions {
@@ -103,155 +91,136 @@
       border-radius: 5px;
       cursor: pointer;
     }
-    .radar iframe {
-      border: none;
-    }
     .wide-chart {
       grid-column: 1 / -1;
     }
-    #tsChart {
-      height: 400px !important;
-      min-width: 700px;
-    }
-    .scroll-chart {
-      overflow-x: auto;
-    }
-    .energy-source {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px;
-      border-radius: 6px;
-      margin: 5px 0;
-    }
-    .energy-label {
-      width: 100px;
-      font-weight: 500;
-    }
-    .energy-bar {
-      height: 20px;
-      border-radius: 4px;
-      flex-grow: 1;
-      transition: width 0.5s ease;
-    }
-    .indicador {
-      background: #f1f9ff;
-      border-left: 6px solid #0077cc;
-      padding: 10px 15px;
-      border-radius: 8px;
-      font-size: 1.2rem;
-    }
     .valor {
-      font-size: 1.5rem;
+      font-size: 1.6rem;
       font-weight: bold;
-      margin-top: 5px;
+    }
+    .subgrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>🌍 Dashboard Ambiental + Energético</h1>
+    <h1>🌍 Dashboard Ambiental + Datos ESIOS</h1>
   </header>
 
-  <div id="alertaESP" class="alerta azul"></div>
-  <div id="alertaTemp" class="alerta"></div>
-  <div id="alertaHum" class="alerta"></div>
+<div class="grid">
+  <section>
+    <h2>📍 Ubicación</h2>
+    <label for="ciudad">Introduce tu ciudad:</label>
+    <input type="text" id="ciudad" placeholder="Ej: Salamanca" autocomplete="off">
+    <button id="btnGeo">Usar mi ubicación</button>
+    <div class="suggestions" id="sugerencias"></div>
+  </section>
 
-  <div class="grid">
-    <section>
-      <h2>📍 Ubicación</h2>
-      <label for="ciudad">Introduce tu ciudad:</label>
-      <input type="text" id="ciudad" placeholder="Ej: Salamanca" autocomplete="off">
-      <button id="btnGeo">Usar mi ubicación</button>
-      <div class="suggestions" id="sugerencias"></div>
-    </section>
+  <section>
+    <h2>📊 Datos Actuales</h2>
+    <div class="cards">
+      <div class="card" id="cardTemp">🌡️ Temperatura: -- °C</div>
+      <div class="card" id="cardHum">💧 Humedad: -- %</div>
+      <div class="card" id="cardAnalisis">🧠 Análisis: ---</div>
+    </div>
+  </section>
 
-    <section>
-      <h2>📊 Datos Actuales</h2>
-      <div class="cards">
-        <div class="card" id="cardTemp">🌡️ Temperatura: -- °C</div>
-        <div class="card" id="cardHum">💧 Humedad: -- %</div>
-        <div class="card" id="cardAnalisis">🧠 Análisis: ---</div>
-      </div>
-    </section>
+  <section class="wide-chart">
+    <h2>📈 Temperatura y Humedad</h2>
+    <canvas id="tsChart"></canvas>
+  </section>
 
-    <section class="indicador">
-      <h2>Demanda Real</h2>
-      <div class="valor" id="demandaReal">-- MW</div>
-    </section>
-    <section class="indicador">
-      <h2>PVPC</h2>
-      <div class="valor" id="pvpc">-- €/MWh</div>
-    </section>
-    <section class="indicador">
-      <h2>Generación Libre de CO₂</h2>
-      <div class="valor" id="co2">-- %</div>
-    </section>
-    <section class="indicador">
-      <h2>Interconexiones</h2>
-      <div class="valor" id="interconexiones">-- MWh</div>
-    </section>
-    <section class="indicador">
-      <h2>Previsión Eólica</h2>
-      <div class="valor" id="eolica">-- MW</div>
-    </section>
-    <section class="indicador">
-      <h2>Previsión Solar</h2>
-      <div class="valor" id="solar">-- MW</div>
-    </section>
+  <section>
+    <h2>💧 Embalses en España</h2>
+    <a href="https://www.embalses.net" target="_blank">
+      <img src="https://www.embalses.net/webmasters/gen-general.php" alt="Embalses España">
+    </a>
+  </section>
 
-    <section class="wide-chart scroll-chart">
-      <h2>📈 Temperatura y Humedad</h2>
-      <canvas id="tsChart"></canvas>
-    </section>
+  <section>
+    <h2>🌦️ Predicción del tiempo</h2>
+    <a class="weatherwidget-io" href="https://forecast7.com/es/40d97n5d66/salamanca/" data-label_1="SALAMANCA" data-label_2="TIEMPO HOY" data-theme="pure">SALAMANCA TIEMPO</a>
+  </section>
 
-    <section class="wide-chart">
-      <h2>⚡ Mix Energético Nacional (Actualizado)</h2>
-      <canvas id="energiaChart"></canvas>
-      <div id="detalleEnergia" class="cards" style="margin-top:20px;">
-        <div class="card" id="tiempoReal">🕒 Actualizando datos...</div>
-      </div>
-    </section>
+  <section>
+    <h2>🌬️ Mapa interactivo Windy</h2>
+    <iframe id="windy" height="450" src="" allowfullscreen></iframe>
+  </section>
 
-    <section class="wide-chart">
-      <h2>📉 Generación y Consumo</h2>
-      <canvas id="graficoDemanda"></canvas>
-    </section>
+  <section class="radar">
+    <h2>🌧️ Radar de lluvias (Windy)</h2>
+    <iframe id="windyRadar" height="450" src="" allowfullscreen></iframe>
+  </section>
+</div>
 
-    <section class="wide-chart">
-      <h2>📉 Mercados y Precios</h2>
-      <canvas id="graficoPrecios"></canvas>
-    </section>
+<div class="grid">
+  <section class="wide-chart">
+    <h2>⚡ Indicadores Energéticos</h2>
+    <div class="subgrid">
+      <div class="card"><h4>Demanda Real</h4><div class="valor" id="demandaReal">-- MW</div></div>
+      <div class="card"><h4>PVPC</h4><div class="valor" id="pvpc">-- €/MWh</div></div>
+      <div class="card"><h4>CO₂ Libre</h4><div class="valor" id="co2">-- %</div></div>
+      <div class="card"><h4>Interconexiones</h4><div class="valor" id="interconexiones">-- MWh</div></div>
+      <div class="card"><h4>Eólica Prevista</h4><div class="valor" id="eolica">-- MW</div></div>
+      <div class="card"><h4>Solar Prevista</h4><div class="valor" id="solar">-- MW</div></div>
+    </div>
+  </section>
 
-    <section>
-      <h2>💧 Embalses en España</h2>
-      <a href="https://www.embalses.net" target="_blank">
-        <img src="https://www.embalses.net/webmasters/gen-general.php" alt="Embalses España">
-      </a>
-    </section>
+  <section class="wide-chart">
+    <h2>📈 Demanda vs Prevista</h2>
+    <canvas id="graficoDemanda"></canvas>
+  </section>
 
-    <section>
-      <h2>🌦️ Predicción del tiempo</h2>
-      <a class="weatherwidget-io" href="https://forecast7.com/es/40d97n5d66/salamanca/" data-label_1="SALAMANCA" data-label_2="TIEMPO HOY" data-theme="pure">SALAMANCA TIEMPO</a>
-    </section>
+  <section class="wide-chart">
+    <h2>📉 Precio de la Electricidad</h2>
+    <canvas id="graficoPrecios"></canvas>
+  </section>
+</div>
 
-    <section>
-      <h2>🌬️ Mapa interactivo Windy</h2>
-      <iframe id="windy" height="450" src="" allowfullscreen></iframe>
-    </section>
+<script>
+async function cargarDatosESIOS() {
+  try {
+    const res = await fetch("https://proxy-ree.onrender.com/datos-ree");
+    const data = await res.json();
 
-    <section class="radar">
-      <h2>🌧️ Radar de lluvias (Windy)</h2>
-      <iframe id="windyRadar" height="450" src="" allowfullscreen></iframe>
-    </section>
-  </div>
+    document.getElementById("demandaReal").textContent = data.demanda + " MW";
+    document.getElementById("pvpc").textContent = data.pvpc + " €/MWh";
+    document.getElementById("co2").textContent = data.co2 + " %";
+    document.getElementById("interconexiones").textContent = data.interconexiones + " MWh";
+    document.getElementById("eolica").textContent = data.eolica + " MW";
+    document.getElementById("solar").textContent = data.solar + " MW";
 
-  <!-- Script principal del dashboard (ya lo tenías) -->
-  <script src="dashboard.js"></script>
-  <!-- Script de indicadores ESIOS -->
-  <script src="main.js"></script>
-  <script>
-    !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
-  </script>
+    new Chart(document.getElementById("graficoDemanda"), {
+      type: "line",
+      data: {
+        labels: data.horas,
+        datasets: [
+          { label: "Demanda Real", data: data.demanda_real, borderColor: "orange", fill: false },
+          { label: "Prevista", data: data.demanda_prevista, borderColor: "green", fill: false },
+          { label: "Programada", data: data.demanda_programada, borderColor: "red", fill: false }
+        ]
+      }
+    });
+
+    new Chart(document.getElementById("graficoPrecios"), {
+      type: "line",
+      data: {
+        labels: data.horas_precio,
+        datasets: [
+          { label: "PVPC", data: data.precio_pvpc, borderColor: "#003366", fill: false },
+          { label: "España", data: data.precio_es, borderColor: "#ffcc00", fill: false },
+          { label: "Francia", data: data.precio_fr, borderColor: "#0099ff", fill: false }
+        ]
+      }
+    });
+  } catch (err) {
+    console.error("Error al cargar datos de ESIOS:", err);
+  }
+}
+window.addEventListener("load", cargarDatosESIOS);
+</script>
 </body>
 </html>
