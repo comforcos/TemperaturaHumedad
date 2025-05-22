@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Ambiental Pro</title>
+  <title>Dashboard Ambiental Definitivo</title>
   <link rel="manifest" href="manifest.json">
   <script>
     if ('serviceWorker' in navigator) {
@@ -82,16 +82,26 @@
       font-size: 0.95rem;
     }
 
+    /* Contenedor del gráfico mejorado */
     .chart-container {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       padding-bottom: 15px;
+      width: 100%;
     }
 
     #tsChart {
-      min-width: 100%;
+      min-width: 1200px; /* Ancho mínimo aumentado */
       height: 400px;
       touch-action: pan-x;
+    }
+
+    /* Sección del tiempo mejorada */
+    .tiempo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
     }
 
     .tiempo-container {
@@ -206,6 +216,7 @@
     @media (max-width: 600px) {
       #tsChart {
         height: 300px;
+        min-width: 1000px; /* Mantener ancho mínimo para scroll */
       }
       
       .dia-tiempo {
@@ -255,7 +266,10 @@
     </section>
 
     <section>
-      <h2>🌦️ Pronóstico 7 Días</h2>
+      <div class="tiempo-header">
+        <h2>🌦️ Pronóstico 7 Días</h2>
+        <span id="ciudadTiempo" style="color: var(--color-primario); font-weight: 500;"></span>
+      </div>
       <div class="tiempo-container" id="pronosticoContainer">
         <div class="dia-tiempo">
           <div class="dia-nombre">Cargando...</div>
@@ -312,6 +326,7 @@ const sugerencias = document.getElementById('sugerencias');
 const windy = document.getElementById('windy');
 const windyRadar = document.getElementById('windyRadar');
 const botonGeo = document.getElementById('btnGeo');
+const ciudadTiempo = document.getElementById('ciudadTiempo');
 let chart = null;
 const ciudadGuardada = localStorage.getItem('ciudad');
 const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -345,7 +360,7 @@ function actualizarTarjetas(temp, hum, fecha) {
   diferenciaHoras > 4 && mostrarAlerta('alertaESP', '⚠️ ESP32 inactivo >4h', 'azul');
 }
 
-// Gráfico principal
+// Gráfico principal con mejoras de visualización
 function initChart(labels, tempData, humData) {
   const ctx = document.getElementById('tsChart').getContext('2d');
   chart?.destroy();
@@ -360,43 +375,71 @@ function initChart(labels, tempData, humData) {
           data: tempData,
           borderColor: '#e74c3c',
           backgroundColor: 'rgba(231, 76, 60, 0.1)',
-          tension: 0.3,
-          pointRadius: 3
+          tension: 0.2, // Menor curvatura para más puntos visibles
+          pointRadius: 4, // Puntos más grandes
+          pointHoverRadius: 6,
+          borderWidth: 2
         },
         {
           label: 'Humedad (%)',
           data: humData,
           borderColor: '#3498db',
           backgroundColor: 'rgba(52, 152, 219, 0.1)',
-          tension: 0.3,
-          pointRadius: 3
+          tension: 0.2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          borderWidth: 2
         }
       ]
     },
     options: {
-      responsive: true,
+      responsive: false, // Importante para mantener el ancho mínimo
       maintainAspectRatio: false,
       scales: {
         x: {
           type: 'time',
-          time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } },
-          ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 }
+          time: { 
+            unit: 'hour',
+            displayFormats: { 
+              hour: 'HH:mm',
+              day: 'dd/MM'
+            } 
+          },
+          ticks: {
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 15 // Más ticks visibles
+          }
         },
-        y: { beginAtZero: true }
+        y: { 
+          beginAtZero: true,
+          ticks: {
+            stepSize: 5 // Mejor espaciado en eje Y
+          }
+        }
       },
       plugins: {
         zoom: {
-          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
-          pan: { enabled: true, mode: 'x' }
+          zoom: {
+            wheel: { enabled: true },
+            pinch: { enabled: true },
+            mode: 'x'
+          },
+          pan: {
+            enabled: true,
+            mode: 'x',
+            threshold: 10
+          }
         }
       }
     }
   });
 }
 
-// Pronóstico del tiempo
-async function cargarPronostico(lat, lon) {
+// Pronóstico del tiempo con ciudad
+async function cargarPronostico(lat, lon, ciudad) {
   try {
+    ciudadTiempo.textContent = ciudad;
     const response = await fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7`
     );
@@ -462,7 +505,10 @@ async function actualizarCiudad(ciudad, lat, lon) {
   windy.src = `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lon}&zoom=8&overlay=wind`;
   windyRadar.src = `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lon}&zoom=9&overlay=rain`;
   
-  await Promise.all([cargarPronostico(lat, lon), loadData()]);
+  await Promise.all([
+    cargarPronostico(lat, lon, ciudad),
+    loadData()
+  ]);
 }
 
 // Eventos
