@@ -3,8 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Integral</title>
+  <title>Dashboard Ambiental Estable</title>
   <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log('✅ Service Worker registrado'))
+        .catch(err => console.error('❌ Error al registrar SW:', err));
+    }
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -14,11 +21,10 @@
       background: #eef1f5;
     }
     header {
-      background: linear-gradient(135deg, #0077cc, #005f99);
+      background: #0077cc;
       color: white;
-      padding: 1.5rem;
+      padding: 1rem;
       text-align: center;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     .alerta {
       background-color: #ff4444;
@@ -36,18 +42,15 @@
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 20px;
       padding: 20px;
-      max-width: 1400px;
+      max-width: 1200px;
       margin: auto;
     }
     section {
       background: white;
       border-radius: 10px;
-      padding: 1.5rem;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.05);
-      transition: transform 0.2s;
-    }
-    section:hover {
-      transform: translateY(-3px);
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      position: relative;
     }
     .cards {
       display: flex;
@@ -61,48 +64,16 @@
       border-radius: 8px;
       font-size: 1rem;
     }
-    .indicador {
-      border-left: 4px solid #0077cc;
-      padding: 1rem;
-      margin: 0.5rem 0;
-    }
-    .indicador h3 {
-      margin: 0 0 0.5rem 0;
-      color: #666;
-      font-size: 1rem;
-    }
-    .valor {
-      font-size: 1.8rem;
-      font-weight: 600;
-      color: #2c3e50;
-    }
-	.wide-chart {
-	  grid-column: 1 / -1;
-	  min-width: 1200px;
-	  height: 450px; /* Altura fija */
-	  overflow-x: auto;
-	  overflow-y: hidden; /* Elimina scroll vertical */
-	  position: relative; /* Contenedor posicionado */
-	}
-
-	#tsChart {
-	  width: 2000px !important;
-	  height: 400px !important;
-	  min-height: 400px; /* Altura mínima fija */
-	}
-    input[type="text"], button {
-      padding: 10px;
-      margin-top: 10px;
-      font-size: 1em;
+    canvas, iframe, img {
       width: 100%;
-      box-sizing: border-box;
+      border-radius: 8px;
     }
-    button {
-      background-color: #0077cc;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 1em;
+      box-sizing: border-box;
+      margin-top: 10px;
     }
     .suggestions {
       position: absolute;
@@ -115,25 +86,58 @@
       overflow-y: auto;
       z-index: 10;
     }
-    .energy-source {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .suggestions div {
       padding: 8px;
-      border-radius: 6px;
-      margin: 5px 0;
+      cursor: pointer;
     }
-    .energy-bar {
-      height: 20px;
-      border-radius: 4px;
-      flex-grow: 1;
-      transition: width 0.5s ease;
+    .suggestions div:hover {
+      background: #eee;
+    }
+    button {
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 1em;
+      background-color: #0077cc;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .radar iframe {
+      border: none;
+    }
+    .wide-chart {
+      grid-column: 1 / -1;
+    }
+    .chart-container {
+      overflow-x: auto;
+      min-width: 600px;
+    }
+    #tsChart {
+      min-width: 800px;
+      height: 400px !important;
+    }
+    .ree-link {
+      display: block;
+      padding: 20px;
+      background: #0077cc;
+      color: white !important;
+      text-align: center;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: transform 0.2s;
+      margin-top: 15px;
+    }
+    .ree-link:hover {
+      transform: scale(1.02);
+      background: #0066b3;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>🌍 Dashboard Integral</h1>
+    <h1>🌍 Dashboard Ambiental</h1>
   </header>
 
   <div id="alertaESP" class="alerta azul"></div>
@@ -141,34 +145,9 @@
   <div id="alertaHum" class="alerta"></div>
 
   <div class="grid">
-    <!-- Sección Energética -->
-    <section>
-      <h2>⚡ Indicadores Energéticos</h2>
-      <div class="indicador">
-        <h3>Demanda Actual</h3>
-        <div class="valor" id="demanda">-- MW</div>
-      </div>
-      <div class="indicador">
-        <h3>Generación Libre de CO₂</h3>
-        <div class="valor" id="co2">-- %</div>
-      </div>
-      <div class="indicador">
-        <h3>Balance Internacional</h3>
-        <div class="valor" id="interconexiones">-- MWh</div>
-      </div>
-    </section>
-
-    <!-- Gráfico Temperatura/Humedad Responsive -->
-    <section class="wide-chart">
-      <h2>📈 Temperatura y Humedad</h2>
-      <div class="chart-container">
-        <canvas id="tsChart"></canvas>
-      </div>
-    </section>
-
-    <!-- Sección Ambiental -->
     <section>
       <h2>📍 Ubicación</h2>
+      <label for="ciudad">Introduce tu ciudad:</label>
       <input type="text" id="ciudad" placeholder="Ej: Salamanca" autocomplete="off">
       <button id="btnGeo">Usar mi ubicación</button>
       <div class="suggestions" id="sugerencias"></div>
@@ -184,17 +163,20 @@
     </section>
 
     <section class="wide-chart">
-      <h2>⚡ Mix Energético Nacional</h2>
-      <canvas id="energiaChart"></canvas>
-      <div id="detalleEnergia" class="cards" style="margin-top:20px;">
-        <div class="card" id="tiempoReal">🕒 Actualizando datos...</div>
+      <h2>📈 Temperatura y Humedad</h2>
+      <div class="chart-container">
+        <canvas id="tsChart"></canvas>
       </div>
     </section>
 
-
-    <section>
-      <h2>🌦️ Predicción del tiempo</h2>
-      <a class="weatherwidget-io" href="https://forecast7.com/es/40d97n5d66/salamanca/" data-label_1="SALAMANCA" data-label_2="TIEMPO HOY" data-theme="pure">SALAMANCA TIEMPO</a>
+    <section class="wide-chart">
+      <h2>⚡ Mix Energético Nacional</h2>
+      <a href="https://demanda.ree.es/visiona/peninsula/nacionalau/total" 
+         class="ree-link" 
+         target="_blank"
+         rel="noopener noreferrer">
+        🌍 Ver datos en tiempo real en REE
+      </a>
     </section>
 
     <section>
@@ -205,172 +187,42 @@
     </section>
 
     <section>
+      <h2>🌦️ Predicción del tiempo</h2>
+      <a class="weatherwidget-io" href="https://forecast7.com/es/40d97n5d66/salamanca/" data-label_1="SALAMANCA" data-label_2="TIEMPO HOY" data-theme="pure">SALAMANCA TIEMPO</a>
+    </section>
+
+    <section>
       <h2>🌬️ Mapa interactivo Windy</h2>
       <iframe id="windy" height="450" src="" allowfullscreen></iframe>
     </section>
 
-    <section class="wide-chart">
-      <h2>📊 Generación y Consumo</h2>
-      <canvas id="graficoGeneracion"></canvas>
-    </section>
-
-    <section class="wide-chart">
-      <h2>💹 Mercados y Precios</h2>
-      <canvas id="graficoMercados"></canvas>
+    <section class="radar">
+      <h2>🌧️ Radar de lluvias (Windy)</h2>
+      <iframe id="windyRadar" height="450" src="" allowfullscreen></iframe>
     </section>
   </div>
 
 <script>
-// Configuración común
-const PROXY_URL = 'https://proxy-ree.onrender.com/datos-ree';
-const tsUrl = 'https://api.thingspeak.com/channels/2885960/feeds.json?api_key=0PSL9A0O3XDWY7B7&results=200';
-const coloresREE = {
-  eolica: '#4CAF50',
-  solar_fv: '#FFC107',
-  hidraulica: '#2196F3',
-  nuclear: '#9E9E9E',
-  carbon: '#795548',
-  ciclo_combinado: '#F44336',
-  otros: '#9C27B0'
-};
+const ciudadInput = document.getElementById('ciudad');
+const sugerencias = document.getElementById('sugerencias');
+const windy = document.getElementById('windy');
+const windyRadar = document.getElementById('windyRadar');
+const botonGeo = document.getElementById('btnGeo');
+let chart = null;
+const ciudadGuardada = localStorage.getItem('ciudad');
+if (ciudadGuardada) ciudadInput.value = ciudadGuardada;
 
-let chart, energiaChart, chartGeneracion, chartMercados;
+const tsUrl = `https://api.thingspeak.com/channels/2885960/feeds.json?api_key=0PSL9A0O3XDWY7B7&results=200`;
 
-// Función principal de actualización
-async function actualizarDashboard() {
-  try {
-    const [datosREE, tsData] = await Promise.all([
-      fetch(PROXY_URL).then(res => res.json()),
-      fetch(tsUrl).then(res => res.json())
-    ]);
-
-    actualizarIndicadores(datosREE);
-    actualizarGraficosEnergia(datosREE);
-    
-    if (tsData.feeds?.length > 0) {
-      actualizarDatosAmbientales(tsData.feeds);
-    }
-  } catch (error) {
-    console.error('Error:', error);
-  }
+function mostrarAlerta(id, mensaje, clase = '') {
+  const el = document.getElementById(id);
+  el.textContent = mensaje;
+  el.className = 'alerta ' + clase;
+  el.style.display = 'block';
 }
 
-function actualizarIndicadores(datos) {
-  document.getElementById('demanda').textContent = `${datos.demanda} MW`;
-  document.getElementById('co2').textContent = `${datos.co2Free}%`;
-  document.getElementById('interconexiones').textContent = `${datos.balance || 0} MWh`;
-}
-
-function actualizarGraficosEnergia(datos) {
-  actualizarGraficoGeneracion(datos);
-  actualizarGraficoMercados(datos);
-  actualizarMixEnergetico(datos);
-}
-
-function actualizarDatosAmbientales(feeds) {
-  const ultimo = feeds[feeds.length - 1];
-  actualizarTarjetas(
-    parseFloat(ultimo.field1) || 0,
-    parseFloat(ultimo.field3) || 0,
-    ultimo.created_at
-  );
-  actualizarGraficaTS(feeds);
-}
-
-// Funciones de gráficos
-function actualizarGraficoGeneracion(datos) {
-  const ctx = document.getElementById('graficoGeneracion').getContext('2d');
-  if (chartGeneracion) chartGeneracion.destroy();
-
-  chartGeneracion = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: ['00h', '04h', '08h', '12h', '16h', '20h'],
-      datasets: [{
-        label: 'Generación (MW)',
-        data: [datos.eolica, datos.solar_fv, datos.hidraulica, datos.nuclear, datos.ciclo_combinado, datos.renovables],
-        borderColor: '#4CAF50',
-        tension: 0.4
-      }, {
-        label: 'Consumo (MW)',
-        data: [datos.demanda * 0.8, datos.demanda * 0.9, datos.demanda, datos.demanda * 1.1, datos.demanda * 0.95, datos.demanda * 0.85],
-        borderColor: '#0077cc',
-        tension: 0.4
-      }]
-    },
-    options: { responsive: true, maintainAspectRatio: false }
-  });
-}
-
-function actualizarGraficoMercados(datos) {
-  const ctx = document.getElementById('graficoMercados').getContext('2d');
-  if (chartMercados) chartMercados.destroy();
-
-  chartMercados = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Precio Spot', 'Mercado Diario', 'Mercado Intradiario'],
-      datasets: [{
-        label: 'Precios (€/MWh)',
-        data: [datos.precio, datos.precio * 0.95, datos.precio * 1.05],
-        backgroundColor: ['#0077cc', '#4CAF50', '#FFC107']
-      }]
-    },
-    options: { responsive: true, maintainAspectRatio: false }
-  });
-}
-
-function actualizarMixEnergetico(datos) {
-  const generacionTotal = datos.eolica + datos.solar_fv + datos.hidraulica + 
-                        datos.nuclear + datos.carbon + datos.ciclo_combinado + datos.otros;
-
-  const ctx = document.getElementById('energiaChart').getContext('2d');
-  if (energiaChart) energiaChart.destroy();
-
-  energiaChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: ['Eólica', 'Solar FV', 'Hidráulica', 'Nuclear', 'Carbón', 'Ciclo Combinado', 'Otros'],
-      datasets: [{
-        data: [
-          datos.eolica, datos.solar_fv, datos.hidraulica,
-          datos.nuclear, datos.carbon, datos.ciclo_combinado, datos.otros
-        ],
-        backgroundColor: Object.values(coloresREE),
-        borderWidth: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: 'right' },
-        tooltip: {
-          callbacks: {
-            label: ctx => `${ctx.label}: ${ctx.raw} MW (${(ctx.raw / generacionTotal * 100).toFixed(1)}%)`
-          }
-        }
-      }
-    }
-  });
-
-  document.getElementById('detalleEnergia').innerHTML = `
-    <div class="card">🏭 Demanda Actual: ${datos.demanda} MW</div>
-    ${Object.entries({
-      eolica: '🌬️ Eólica',
-      solar_fv: '☀️ Solar Fotovoltaica',
-      hidraulica: '💧 Hidráulica',
-      nuclear: '☢️ Nuclear',
-      carbon: '🏭 Carbón',
-      ciclo_combinado: '🔥 Ciclo Combinado',
-      otros: '⚡ Otros'
-    }).map(([key, label]) => `
-      <div class="energy-source">
-        <span class="energy-label">${label}</span>
-        <div class="energy-bar" style="background:${coloresREE[key]};width:${(datos[key]/generacionTotal*100).toFixed(1)}%"></div>
-        <span>${datos[key]} MW</span>
-      </div>
-    `).join('')}
-  `;
+function ocultarAlerta(id) {
+  document.getElementById(id).style.display = 'none';
 }
 
 function actualizarTarjetas(temp, hum, fecha) {
@@ -391,85 +243,99 @@ function actualizarTarjetas(temp, hum, fecha) {
   else ocultarAlerta('alertaESP');
 }
 
-function actualizarGraficaTS(feeds) {
-  const ctx = document.getElementById('tsChart').getContext('2d');
-  if (chart) chart.destroy();
-
-  const labels = feeds.map(feed => {
-    const date = new Date(feed.created_at);
-    return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
-  });
-
-  const temperatura = feeds.map(feed => parseFloat(feed.field1) || 0);
-  const humedad = feeds.map(feed => parseFloat(feed.field3) || 0);
-
-  chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Temperatura (°C)',
-          data: temperatura,
-          borderColor: '#f44336',
-          backgroundColor: 'rgba(244,67,54,0.2)',
-          tension: 0.3
-        },
-        {
-          label: 'Humedad (%)',
-          data: humedad,
-          borderColor: '#2196F3',
-          backgroundColor: 'rgba(33,150,243,0.2)',
-          tension: 0.3
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'top' }
-      },
-      scales: {
-        x: {
-          ticks: {
-            autoSkip: true,
-            maxTicksLimit: 30
-          }
-        },
-        y: {
-          beginAtZero: true
-        }
-      }
-    }
-  });
-}
-
-
 function formatDateTime(dateStr) {
   const d = new Date(dateStr);
-  return d.toLocaleString('es-ES', { 
-    day: '2-digit', 
-    month: '2-digit', 
-    year: 'numeric', 
-    hour: '2-digit', 
-    minute: '2-digit'
-  });
+  return d.toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-function mostrarAlerta(id, mensaje, clase = '') {
-  const el = document.getElementById(id);
-  el.textContent = mensaje;
-  el.className = 'alerta ' + clase;
-  el.style.display = 'block';
+function loadData() {
+  fetch(tsUrl)
+    .then(res => res.json())
+    .then(data => {
+      const feeds = data.feeds;
+      if (!feeds || feeds.length === 0) return;
+      const labels = feeds.map(f => formatDateTime(f.created_at));
+      const tempData = feeds.map(f => parseFloat(f.field1) || null);
+      const humData = feeds.map(f => parseFloat(f.field3) || null);
+      actualizarTarjetas(tempData.at(-1), humData.at(-1), feeds.at(-1).created_at);
+
+      const ctx = document.getElementById('tsChart').getContext('2d');
+      if (!chart) {
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              { 
+                label: 'Temperatura (°C)', 
+                data: tempData, 
+                borderColor: 'red', 
+                backgroundColor: 'rgba(255,99,132,0.2)', 
+                fill: false 
+              },
+              { 
+                label: 'Humedad (%)', 
+                data: humData, 
+                borderColor: 'blue', 
+                backgroundColor: 'rgba(54,162,235,0.2)', 
+                fill: false 
+              }
+            ]
+          },
+          options: { 
+            responsive: false,
+            maintainAspectRatio: false,
+            scales: { 
+              x: {
+                ticks: {
+                  autoSkip: true,
+                  maxTicksLimit: 20
+                }
+              },
+              y: { 
+                beginAtZero: true 
+              } 
+            } 
+          }
+        });
+      } else {
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = tempData;
+        chart.data.datasets[1].data = humData;
+        chart.update();
+      }
+    })
+    .catch(err => console.error('Error al cargar datos:', err));
 }
 
-function ocultarAlerta(id) {
-  document.getElementById(id).style.display = 'none';
+function actualizarCiudad(ciudad, lat, lon) {
+  localStorage.setItem('ciudad', ciudad);
+  windy.src = `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lon}&zoom=8&overlay=wind&level=surface`;
+  windyRadar.src = `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lon}&zoom=9&overlay=rain&level=surface`;
+  document.querySelector('.weatherwidget-io').href = `https://forecast7.com/es/${lat.toFixed(2)}n${lon.toFixed(2)}/`.replace(/\./g, 'd');
+  document.querySelector('.weatherwidget-io').dataset.label_1 = ciudad.toUpperCase();
 }
 
-// Geolocalización
-document.getElementById('btnGeo').addEventListener('click', () => {
+ciudadInput.addEventListener('input', () => {
+  const query = ciudadInput.value.trim();
+  if (query.length < 2) return sugerencias.innerHTML = '';
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=es&q=${encodeURIComponent(query)}`)
+    .then(res => res.json())
+    .then(data => {
+      sugerencias.innerHTML = '';
+      data.forEach(item => {
+        const div = document.createElement('div');
+        div.textContent = item.display_name;
+        div.onclick = () => {
+          sugerencias.innerHTML = '';
+          actualizarCiudad(item.display_name, parseFloat(item.lat), parseFloat(item.lon));
+        };
+        sugerencias.appendChild(div);
+      });
+    });
+});
+
+botonGeo.addEventListener('click', () => {
   if (!navigator.geolocation) return alert("Geolocalización no disponible.");
   navigator.geolocation.getCurrentPosition(pos => {
     const lat = pos.coords.latitude;
@@ -483,60 +349,19 @@ document.getElementById('btnGeo').addEventListener('click', () => {
   }, () => alert("No se pudo acceder a la ubicación."));
 });
 
-
-function actualizarCiudad(ciudad, lat, lon) {
-  localStorage.setItem('ciudad', ciudad);
-  document.getElementById('windy').src = `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lon}&zoom=8&overlay=wind&level=surface`;
-  document.getElementById('windyRadar').src = `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lon}&zoom=9&overlay=rain&level=surface`;
-  document.querySelector('.weatherwidget-io').href = `https://forecast7.com/es/${lat.toFixed(2)}n${lon.toFixed(2)}/`.replace(/\./g, 'd');
-  document.querySelector('.weatherwidget-io').dataset.label_1 = ciudad.toUpperCase();
-}
-
-// Autocompletado de ciudades
-document.getElementById('ciudad').addEventListener('input', function() {
-  const query = this.value.trim();
-  if (query.length < 2) {
-    document.getElementById('sugerencias').innerHTML = '';
-    return;
-  }
-  
-  fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=es&q=${encodeURIComponent(query)}`)
+if (ciudadGuardada) {
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=es&q=${encodeURIComponent(ciudadGuardada)}`)
     .then(res => res.json())
     .then(data => {
-      const sugerencias = document.getElementById('sugerencias');
-      sugerencias.innerHTML = '';
-      data.forEach(item => {
-        const div = document.createElement('div');
-        div.textContent = item.display_name;
-        div.onclick = () => {
-          actualizarCiudad(item.display_name, parseFloat(item.lat), parseFloat(item.lon));
-          sugerencias.innerHTML = '';
-        };
-        sugerencias.appendChild(div);
-      });
+      if (data.length > 0) actualizarCiudad(data[0].display_name, parseFloat(data[0].lat), parseFloat(data[0].lon));
     });
-});
+}
 
-// Cargar ciudad guardada al iniciar
-window.addEventListener('load', () => {
-  const ciudadGuardada = localStorage.getItem('ciudad');
-  if (ciudadGuardada) {
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=es&q=${encodeURIComponent(ciudadGuardada)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.length > 0) {
-          actualizarCiudad(data[0].display_name, parseFloat(data[0].lat), parseFloat(data[0].lon));
-        }
-      });
-  }
-});
-
-// Inicialización final
-document.addEventListener('DOMContentLoaded', () => {
-  actualizarDashboard();
-  setInterval(actualizarDashboard, 300000);
-  !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
-});
+loadData();
+setInterval(() => loadData(), 300000);
+</script>
+<script>
+!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
 </script>
 </body>
 </html>
