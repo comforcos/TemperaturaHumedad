@@ -56,8 +56,12 @@
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 20px;
       padding: 20px;
-      max-width: 1200px;
+      max-width: 1400px;
       margin: auto;
+    }
+
+    .wide-chart {
+      grid-column: 1 / -1;
     }
 
     section {
@@ -82,21 +86,40 @@
       font-size: 0.95rem;
     }
 
-    /* Contenedor del gráfico mejorado */
     .chart-container {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      padding-bottom: 15px;
-      width: 100%;
+      padding: 15px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      margin: 0 20px;
+    }
+
+    .chart-container::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .chart-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+
+    .chart-container::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 4px;
+    }
+
+    .chart-container::-webkit-scrollbar-thumb:hover {
+      background: #555;
     }
 
     #tsChart {
-      min-width: 1200px; /* Ancho mínimo aumentado */
+      min-width: 1000px;
       height: 400px;
       touch-action: pan-x;
     }
 
-    /* Sección del tiempo mejorada */
     .tiempo-header {
       display: flex;
       justify-content: space-between;
@@ -213,10 +236,18 @@
       margin-bottom: 5px;
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 768px) {
+      .chart-container {
+        margin: 0 10px;
+      }
+      
       #tsChart {
+        min-width: 800px;
         height: 300px;
-        min-width: 1000px; /* Mantener ancho mínimo para scroll */
+      }
+      
+      .grid {
+        padding: 10px;
       }
       
       .dia-tiempo {
@@ -335,7 +366,6 @@ const ICONOS_TIEMPO = {
   4: '⛈️', 5: '❄️', 6: '🌫️', 7: '🌦️'
 };
 
-// Funciones base
 function mostrarAlerta(id, mensaje, clase = '') {
   const el = document.getElementById(id);
   el.textContent = mensaje;
@@ -360,7 +390,6 @@ function actualizarTarjetas(temp, hum, fecha) {
   diferenciaHoras > 4 && mostrarAlerta('alertaESP', '⚠️ ESP32 inactivo >4h', 'azul');
 }
 
-// Gráfico principal con mejoras de visualización
 function initChart(labels, tempData, humData) {
   const ctx = document.getElementById('tsChart').getContext('2d');
   chart?.destroy();
@@ -375,8 +404,8 @@ function initChart(labels, tempData, humData) {
           data: tempData,
           borderColor: '#e74c3c',
           backgroundColor: 'rgba(231, 76, 60, 0.1)',
-          tension: 0.2, // Menor curvatura para más puntos visibles
-          pointRadius: 4, // Puntos más grandes
+          tension: 0.2,
+          pointRadius: 4,
           pointHoverRadius: 6,
           borderWidth: 2
         },
@@ -393,8 +422,15 @@ function initChart(labels, tempData, humData) {
       ]
     },
     options: {
-      responsive: false, // Importante para mantener el ancho mínimo
+      responsive: true,
       maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            font: { size: 14 }
+          }
+        }
+      },
       scales: {
         x: {
           type: 'time',
@@ -406,29 +442,27 @@ function initChart(labels, tempData, humData) {
             } 
           },
           ticks: {
+            font: { size: 12 },
             maxRotation: 0,
             autoSkip: true,
-            maxTicksLimit: 15 // Más ticks visibles
+            maxTicksLimit: 20
+          },
+          title: {
+            display: true,
+            text: 'Fecha/Hora',
+            font: { size: 14 }
           }
         },
         y: { 
           beginAtZero: true,
           ticks: {
-            stepSize: 5 // Mejor espaciado en eje Y
-          }
-        }
-      },
-      plugins: {
-        zoom: {
-          zoom: {
-            wheel: { enabled: true },
-            pinch: { enabled: true },
-            mode: 'x'
+            font: { size: 12 },
+            stepSize: 5
           },
-          pan: {
-            enabled: true,
-            mode: 'x',
-            threshold: 10
+          title: {
+            display: true,
+            text: 'Valores',
+            font: { size: 14 }
           }
         }
       }
@@ -436,7 +470,6 @@ function initChart(labels, tempData, humData) {
   });
 }
 
-// Pronóstico del tiempo con ciudad
 async function cargarPronostico(lat, lon, ciudad) {
   try {
     ciudadTiempo.textContent = ciudad;
@@ -467,7 +500,6 @@ function mostrarPronostico(data) {
   document.getElementById('pronosticoContainer').innerHTML = html;
 }
 
-// Detalle horario
 async function mostrarDetalleHorario(fecha, weathercode) {
   const [lat, lon] = [localStorage.getItem('ultimaLat'), localStorage.getItem('ultimaLon')];
   
@@ -496,7 +528,6 @@ async function mostrarDetalleHorario(fecha, weathercode) {
   }
 }
 
-// Gestión de ubicación
 async function actualizarCiudad(ciudad, lat, lon) {
   localStorage.setItem('ciudad', ciudad);
   localStorage.setItem('ultimaLat', lat);
@@ -511,7 +542,6 @@ async function actualizarCiudad(ciudad, lat, lon) {
   ]);
 }
 
-// Eventos
 document.querySelector('.cerrar-modal').addEventListener('click', () => {
   document.getElementById('detalleModal').style.display = 'none';
 });
@@ -550,14 +580,12 @@ botonGeo.addEventListener('click', () => {
   }, () => alert("Error obteniendo ubicación"));
 });
 
-// Inicialización
 if (ciudadGuardada) {
   fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=es&q=${encodeURIComponent(ciudadGuardada)}`)
     .then(res => res.json())
     .then(data => data[0] && actualizarCiudad(data[0].display_name, data[0].lat, data[0].lon));
 }
 
-// Carga inicial
 async function loadData() {
   try {
     const response = await fetch('https://api.thingspeak.com/channels/2885960/feeds.json?api_key=0PSL9A0O3XDWY7B7&results=200');
